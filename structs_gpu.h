@@ -1,6 +1,6 @@
 
 #ifndef STRUCTS_GPU_H
-#define STRUCTS_GPU_H 
+# define STRUCTS_GPU_H 
 
 typedef struct s_debug
 {
@@ -23,6 +23,11 @@ typedef struct	s_vec3
 {
 	float e[3];
 }				t_vec3;
+
+typedef struct	s_vec2
+{
+	float e[2];
+}				t_vec2;
 
 typedef struct	s_ray
 {
@@ -50,7 +55,9 @@ typedef struct	s_hit_record
 	float t;
 	t_vec3 p;
 	t_vec3 normal;
+	t_vec2 uv;
 	t_material mat_ptr;
+	void		*data_text;
 }				t_hit_record;
 
 typedef struct	s_hitable_list

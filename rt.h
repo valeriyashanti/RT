@@ -11,8 +11,8 @@
 int STATE;
 int LOG;
 
-#define WIDTH 256
-#define HEIGHT 256
+#define WIDTH 512
+#define HEIGHT 512
 
 typedef struct s_debug
 {
@@ -76,7 +76,7 @@ typedef struct	s_env
 	int width;
 	int height;
 
-	t_sphere list[5];
+	t_sphere list[6];
 	t_sphere list_random[501];
 	t_hitable_list world;
 	t_camera cam;
@@ -98,5 +98,11 @@ int 	set_gpu_args(t_env *env, t_cl *cl);
 void	init_gpu(t_env *env);
 void	error_finish(char *str);
 int		read_cl(char **code);
-
+void    render_cpu(t_env *env);
+float 	get_random(t_uint2 *seeds);
+int		render(void *env);
+t_hitable_list random_scene(t_env *env);
+t_vec3 	random_in_unit_sphere();
+t_material texture(int n, t_env *env);
+int apply_texture(t_material tex, t_ray r_in, t_hit_record rec, t_vec3 *attenuation, t_ray *scattered, t_uint2 *seeds);
 #endif

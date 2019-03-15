@@ -151,34 +151,42 @@ static t_ray camera_get_ray(t_camera cam, float s, float t, uint2 *seeds)
             vec3_sub(vec3_sub(vec3_add(vec3_add(cam.lower_left_corner, vec3_mul_num(s, cam.horizontal)), vec3_mul_num(t, cam.vertical)), cam.origin), offset));
 }
 
-static int sphere_hit(t_vec3 s_center, float s_radius, t_material s_mat_ptr, t_ray r, float t_min, float t_max, t_hit_record *rec)
+static int sphere_hit(t_sphere s, t_ray r, float t_min, float t_max, t_hit_record *rec/*, __global t_debug *logfile, int *l*/)
 {
-	t_vec3 oc = vec3_sub(ray_origin(r), s_center);
+	// int id = get_global_id(0);
+	// if (id == 33460)
+	// {
+	// 	logfile[*l].step = '?';
+	// 	logfile[*l].x = s.center.e[0];
+	// 	logfile[*l].y = s.center.e[1];
+	// 	logfile[*l].z = s.center.e[2];
+	// 	*l = *l + 1;
+	// }
+	t_vec3 oc = vec3_sub(ray_origin(r), s.center);
 	float a = vec3_dot(ray_direction(r), ray_direction(r));
 	float b = vec3_dot(oc, ray_direction(r));
-	float c = vec3_dot(oc, oc) - s_radius * s_radius;
+	float c = vec3_dot(oc, oc) - s.radius * s.radius;
 	float discriminant = b * b - a * c;
 	if (discriminant > 0) {
 		float temp = (-b - sqrt(discriminant)) / a;
 		if (temp < t_max && temp > t_min) {
 			rec->t = temp;
 			rec->p = ray_point_at_parameter(r, rec->t);
-			rec->normal = vec3_div_num(vec3_sub(rec->p, s_center), s_radius);
-			rec->mat_ptr = s_mat_ptr;
+			rec->normal = vec3_div_num(vec3_sub(rec->p, s.center), s.radius);
+			rec->mat_ptr = s.mat_ptr;
 			return 1;
 		}
 		temp = (-b + sqrt(discriminant)) / a;
 		if (temp < t_max && temp > t_min) {
 			rec->t = temp;
 			rec->p = ray_point_at_parameter(r, rec->t);
-			rec->normal = vec3_div_num(vec3_sub(rec->p, s_center), s_radius);
-			rec->mat_ptr = s_mat_ptr;
+			rec->normal = vec3_div_num(vec3_sub(rec->p, s.center), s.radius);
+			rec->mat_ptr = s.mat_ptr;
 			return 1;
 		}
 	}
 	return 0;
 }
-
 
 static t_hitable_list  hitable_list(__global t_sphere *l, int n)
 {
@@ -188,13 +196,29 @@ static t_hitable_list  hitable_list(__global t_sphere *l, int n)
     return hl;
 }
 
-static int hitable_list_hit(t_hitable_list hl, t_ray r, float t_min, float t_max, t_hit_record *rec)
+static t_sphere extraxt_sphere(__global t_sphere *l, int i)
+{
+	t_sphere s;
+	s.center.e[0] = l[i].center.e[0];
+	s.center.e[1] = l[i].center.e[1];
+	s.center.e[2] = l[i].center.e[2];
+	s.radius = l[i].radius;
+	s.mat_ptr.type = l[i].mat_ptr.type;
+	s.mat_ptr.fuzz = l[i].mat_ptr.fuzz;
+	s.mat_ptr.ref_idx = l[i].mat_ptr.ref_idx;
+	s.mat_ptr.albedo.e[0] = l[i].mat_ptr.albedo.e[0];
+	s.mat_ptr.albedo.e[1] = l[i].mat_ptr.albedo.e[1];
+	s.mat_ptr.albedo.e[2] = l[i].mat_ptr.albedo.e[2];
+	return s;
+}
+
+static int hitable_list_hit(t_hitable_list hl, t_ray r, float t_min, float t_max, t_hit_record *rec/*, __global t_debug *logfile, int *l*/)
 {
 	t_hit_record temp_rec;
 	int hit_anything = 0;
 	double closest_so_far = t_max;
 	for (int i = 0; i < hl.list_size; i++) {
-		if (sphere_hit(hl.list[i].center, hl.list[i].radius, hl.list[i].mat_ptr, r, t_min, closest_so_far, &temp_rec)) {
+		if (sphere_hit(extraxt_sphere(hl.list, i), r, t_min, closest_so_far, &temp_rec/*, logfile, l*/)) {
 			hit_anything = 1;
 			closest_so_far = temp_rec.t;
 			*rec = temp_rec;
@@ -310,9 +334,7 @@ static int dielectric_scatter(t_material m, t_ray r_in, t_hit_record rec, t_vec3
     return 1;
 }
 
-
-
-static t_vec3 color_gpu(t_ray r, t_hitable_list world, uint2 *seeds, int id, __global t_debug *logfile, int *l)
+static t_vec3 color_gpu(t_ray r, t_hitable_list world, uint2 *seeds/*, int id, __global t_debug *logfile, int *l*/)
 {
 	t_vec3 stack[51];
 	int depth = 0;
@@ -320,7 +342,7 @@ static t_vec3 color_gpu(t_ray r, t_hitable_list world, uint2 *seeds, int id, __g
 	while (state)
 	{		
 		t_hit_record rec;
-		if (hitable_list_hit(world, r, 0.001, FLT_MAX, &rec)) {
+		if (hitable_list_hit(world, r, 0.001, FLT_MAX, &rec/*, logfile, l*/)) {
 			t_ray scattered;
 			t_vec3 attenuation;
 			int tcase = 0;
@@ -338,30 +360,30 @@ static t_vec3 color_gpu(t_ray r, t_hitable_list world, uint2 *seeds, int id, __g
 			}
 			if (depth < 50 && tcase) {
 
-				if (id == 33460)
-				{
-					logfile[*l].step = 'A';
-					logfile[*l].depth = depth;
-					logfile[*l].x = attenuation.e[0];
-					logfile[*l].y = attenuation.e[1];
-					logfile[*l].z = attenuation.e[2];
-					*l = *l + 1;
-				}
+				// if (id == 33460)
+				// {
+				// 	logfile[*l].step = 'A';
+				// 	logfile[*l].depth = depth;
+				// 	logfile[*l].x = attenuation.e[0];
+				// 	logfile[*l].y = attenuation.e[1];
+				// 	logfile[*l].z = attenuation.e[2];
+				// 	*l = *l + 1;
+				// }
 
 				stack[depth] = attenuation;
                 r = scattered;
 				depth++;
 			}
 			else {
-				if (id == 33460)
-				{
-					logfile[*l].step = 'B';
-					logfile[*l].depth = depth;
-					logfile[*l].x = 0.0;
-					logfile[*l].y = 0.0;
-					logfile[*l].z = 0.0;
-					*l = *l + 1;
-				}
+				// if (id == 33460)
+				// {
+				// 	logfile[*l].step = 'B';
+				// 	logfile[*l].depth = depth;
+				// 	logfile[*l].x = 0.0;
+				// 	logfile[*l].y = 0.0;
+				// 	logfile[*l].z = 0.0;
+				// 	*l = *l + 1;
+				// }
 
 				stack[depth] = vec3(0, 0, 0);
 				state = 0;
@@ -371,15 +393,15 @@ static t_vec3 color_gpu(t_ray r, t_hitable_list world, uint2 *seeds, int id, __g
 			t_vec3 unit_direction = vec3_unit_vector(ray_direction(r));
 			float t = 0.5*(unit_direction.e[1] + 1.0);
 			stack[depth] = vec3_add(vec3_mul_num((1.0 - t),vec3(1.0, 1.0, 1.0)), vec3_mul_num(t, vec3(0.5, 0.7, 1.0)));
-			if (id == 33460)
-			{
-				logfile[*l].step = 'C';
-				logfile[*l].depth = depth;
-				logfile[*l].x = stack[depth].e[0];
-				logfile[*l].y = stack[depth].e[1];
-				logfile[*l].z = stack[depth].e[2];
-				*l = *l + 1;
-			}
+			// if (id == 33460)
+			// {
+			// 	logfile[*l].step = 'C';
+			// 	logfile[*l].depth = depth;
+			// 	logfile[*l].x = stack[depth].e[0];
+			// 	logfile[*l].y = stack[depth].e[1];
+			// 	logfile[*l].z = stack[depth].e[2];
+			// 	*l = *l + 1;
+			// }
 			state = 0;
 		}
 	}
@@ -391,15 +413,15 @@ static t_vec3 color_gpu(t_ray r, t_hitable_list world, uint2 *seeds, int id, __g
 		res = vec3_mul(stack[depth], res);
 		depth--;
 	}
-	if (id == 33460)
-	{
-		logfile[*l].step = 'R';
-		logfile[*l].depth = depth;
-		logfile[*l].x = res.e[0];
-		logfile[*l].y = res.e[1];
-		logfile[*l].z = res.e[2];
-		*l = *l + 1;
-	}
+	// if (id == 33460)
+	// {
+	// 	logfile[*l].step = 'R';
+	// 	logfile[*l].depth = depth;
+	// 	logfile[*l].x = res.e[0];
+	// 	logfile[*l].y = res.e[1];
+	// 	logfile[*l].z = res.e[2];
+	// 	*l = *l + 1;
+	// }
 	return res;
 }
 
@@ -410,8 +432,9 @@ __kernel void processed (
     t_sphere sphere,
 	int width,
 	int height,
-	__global t_debug *logfile,
-	__global t_sphere *objects
+	// __global t_debug *logfile,
+	__global t_sphere *objects,
+	int size
 	)
 {
 	int l = 0;
@@ -419,7 +442,7 @@ __kernel void processed (
     t_sphere list[1];
     list[0] = sphere;
 
-    t_hitable_list world = hitable_list(objects, 5);
+    t_hitable_list world = hitable_list(objects, size);
 
 	int id;
     int x;
@@ -442,44 +465,44 @@ __kernel void processed (
 	t_ray r = camera_get_ray(cam, u, v, &seeds);
 	t_vec3 p = ray_point_at_parameter(r, 2.0);
 
-	if (id == 33460)
-	{
-		for (int i = 0; i < 5; i++)
-		{
-			logfile[l].step = 'X';
-			logfile[l].x = objects[i].center.e[0];
-			logfile[l].y = objects[i].center.e[1];
-			logfile[l].z = objects[i].center.e[2];
-			l++;
-		}
-	}
+	// if (id == 33460)
+	// {
+	// 	for (int i = 0; i < 5; i++)
+	// 	{
+	// 		logfile[l].step = 'X';
+	// 		logfile[l].x = objects[i].center.e[0];
+	// 		logfile[l].y = objects[i].center.e[1];
+	// 		logfile[l].z = objects[i].center.e[2];
+	// 		l++;
+	// 	}
+	// }
 
-	if (id == 33460)
-	{
-		for (int i = 0; i < 5; i++)
-		{
-			logfile[l].step = 'O';
-			logfile[l].x = world.list[i].center.e[0];
-			logfile[l].y = world.list[i].center.e[1];
-			logfile[l].z = world.list[i].center.e[2];
-			l++;
-		}
-	}
+	// if (id == 33460)
+	// {
+	// 	for (int i = 0; i < 5; i++)
+	// 	{
+	// 		logfile[l].step = 'O';
+	// 		logfile[l].x = world.list[i].center.e[0];
+	// 		logfile[l].y = world.list[i].center.e[1];
+	// 		logfile[l].z = world.list[i].center.e[2];
+	// 		l++;
+	// 	}
+	// }
 	
-	t_vec3 col = color_gpu(r, world, &seeds, id, logfile, &l);
+	t_vec3 col = color_gpu(r, world, &seeds/*, id, logfile, &l*/);
 
 	// ((__global unsigned int*)output[id * 3] = col.e[0];
 	// ((__global unsigned int*)output)[id * 3 + 1] = col.e[1];
 	// ((__global unsigned int*)output)[id * 3 + 2] = col.e[2];
 
-	if (id == 33460)
-	{
-		logfile[l].step = 'Z';
-		logfile[l].x = col.e[0];
-		logfile[l].y = col.e[1];
-		logfile[l].z = col.e[2];
-		l++;
-	}
+	// if (id == 33460)
+	// {
+	// 	logfile[l].step = 'Z';
+	// 	logfile[l].x = col.e[0];
+	// 	logfile[l].y = col.e[1];
+	// 	logfile[l].z = col.e[2];
+	// 	l++;
+	// }
 
 	// if (id == 33460)
 	// {
@@ -489,8 +512,8 @@ __kernel void processed (
 	// }
 	// else{
 
-	output[id * 3] = col.e[0];
-	output[id * 3 + 1] = col.e[1];
-	output[id * 3 + 2] = col.e[2];
+	output[ind * 3] = col.e[0];
+	output[ind * 3 + 1] = col.e[1];
+	output[ind * 3 + 2] = col.e[2];
 	//}
 }

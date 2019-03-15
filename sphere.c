@@ -23,6 +23,8 @@ int sphere_hit(t_sphere s, t_ray r, float t_min, float t_max, t_hit_record *rec)
 			rec->p = ray_point_at_parameter(r, rec->t);
 			rec->normal = vec3_div_num(vec3_sub(rec->p, s.center), s.radius);
 			rec->mat_ptr = s.mat_ptr;
+			rec->radius = s.radius;
+			rec->center = s.center;
 			return 1;
 		}
 		temp = (-b + sqrt(discriminant)) / a;
@@ -31,6 +33,9 @@ int sphere_hit(t_sphere s, t_ray r, float t_min, float t_max, t_hit_record *rec)
 			rec->p = ray_point_at_parameter(r, rec->t);
 			rec->normal = vec3_div_num(vec3_sub(rec->p, s.center), s.radius);
 			rec->mat_ptr = s.mat_ptr;
+			rec->radius = s.radius;
+			rec->center = s.center;
+
 			return 1;
 		}
 	}

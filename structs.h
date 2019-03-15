@@ -4,7 +4,7 @@
 #include "float.h"
 #include "math.h"
 #include <stdlib.h>
-#include <SDL2/SDL.h>
+#include <SDL.h>
 
 typedef struct	s_uint2
 {
@@ -16,11 +16,6 @@ typedef struct	s_vec3
 {
 	float e[3];
 }				t_vec3;
-
-typedef struct	s_vec2
-{
-	float e[2];
-}				t_vec2;
 
 typedef struct	s_ray
 {
@@ -34,6 +29,7 @@ typedef struct	s_material
 	t_vec3 albedo;
 	float fuzz;
 	float ref_idx;
+	SDL_Surface *texture;
 }				t_material;
 
 typedef struct	s_sphere
@@ -43,14 +39,17 @@ typedef struct	s_sphere
 	t_material mat_ptr;
 }				t_sphere;
 
+
+
 typedef struct	s_hit_record
 {
 	float t;
 	t_vec3 p;
 	t_vec3 normal;
-	t_vec2 uv;
 	t_material mat_ptr;
-	SDL_Texture *texture;
+	float	radius;
+	t_vec3 center;
+
 }				t_hit_record;
 
 typedef struct	s_hitable_list
