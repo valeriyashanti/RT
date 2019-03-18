@@ -29,7 +29,8 @@ typedef struct	s_material
 	t_vec3 albedo;
 	float fuzz;
 	float ref_idx;
-	SDL_Surface *texture;
+	SDL_Surface *texture_bump;
+	SDL_Surface *texture_origin;
 }				t_material;
 
 typedef struct	s_sphere

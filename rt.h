@@ -104,5 +104,9 @@ int		render(void *env);
 t_hitable_list random_scene(t_env *env);
 t_vec3 	random_in_unit_sphere();
 t_material texture(int n, t_env *env);
-int apply_texture(t_material tex, t_ray r_in, t_hit_record rec, t_vec3 *attenuation, t_ray *scattered, t_uint2 *seeds);
+t_vec3 apply_texture(t_material tex, t_hit_record rec, t_vec3 attenuation);
+int apply_texture_bump(t_material tex, t_ray r_in, t_hit_record *rec, t_vec3 *attenuation, t_ray *scattered, t_uint2 *seeds);
+
+
+
 #endif

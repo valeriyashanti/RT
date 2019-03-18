@@ -22,9 +22,11 @@ int main(int argc, char *args[])
 	// env->world = hitable_list(env->list, 1);
 
 	env->list[0] = sphere(vec3(0, 0, -1), 0.5, lambertian(vec3(0.1, 0.2, 0.5)));
-	env->list[1] = sphere(vec3(0, -100.5, -1), 100, lambertian(vec3(0.8, 0.8, 0.0)));
+	// env->list[1] = sphere(vec3(0, -100.5, -1), 100, lambertian(vec3(0.8, 0.8, 0.0)));
+	env->list[1] = sphere(vec3(0, -100.5, -1), 100, texture(1, env));
+
 	env->list[2] = sphere(vec3(1, 0, -1), 0.5, metal(vec3(0.8, 0.6, 0.2), 0.0));
-	// env->list[3] = sphere(vec3(-1, 0, -1), 0.5, dielectric(1.5));
+	env->list[3] = sphere(vec3(1, 1, -1), 0.5, texture(1, env));
 	// env->list[4] = sphere(vec3(-1, 0, -1), -0.45, dielectric(1.5));
 	env->list[4] = sphere(vec3(3, 1, 1), 1.0, texture(1, env));
 	env->world = hitable_list(env->list, 5);

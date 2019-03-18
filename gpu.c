@@ -160,7 +160,7 @@ t_vec3 color_gpu(t_ray r, t_hitable_list world, t_uint2 *seeds)
 			}
 			else if (rec.mat_ptr.type == 3)
 			{
-				tcase = apply_texture(rec.mat_ptr, r, rec, &attenuation, &scattered, seeds);
+				tcase = apply_texture_bump(rec.mat_ptr, r, &rec, &attenuation, &scattered, seeds);
 			}
 			if (depth < 50 && tcase) 
 			{
